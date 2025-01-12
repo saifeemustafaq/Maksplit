@@ -7,7 +7,7 @@ st.set_page_config(
     page_title="Shopping Expense Splitter",
     page_icon="🛍️",
     layout="centered",
-    initial_sidebar_state="collapsed"  # Improve initial load time
+    initial_sidebar_state="collapsed"
 )
 
 # Custom CSS for better alignment
@@ -27,6 +27,55 @@ if "entries" not in st.session_state:
     st.session_state.entries = [{"cost": "", "Mustafa": False, "Adhi": False, "Karan": False}]
 if "last_entry_count" not in st.session_state:
     st.session_state.last_entry_count = 1
+if "active_index" not in st.session_state:
+    st.session_state.active_index = 0
+
+def move_to_next_row(current_index):
+    """Move focus to the next row's text input"""
+    if current_index < len(st.session_state.entries) - 1:
+        st.session_state.active_index = current_index + 1
+        return True
+    return False
+
+def process_input_text(text: str) -> tuple[str, dict]:
+    """
+    Process the input text to extract amount and determine which checkboxes should be ticked.
+    Returns a tuple of (cleaned_amount, checkbox_states)
+    """
+    # Initialize checkbox states
+    checkbox_states = {
+        "Mustafa": False,
+        "Adhi": False,
+        "Karan": False
+    }
+    
+    # Convert text to lowercase for case-insensitive matching
+    text_lower = text.lower()
+    
+    # Check for special characters
+    if 'm' in text_lower:
+        checkbox_states["Mustafa"] = True
+    if 'a' in text_lower:
+        checkbox_states["Adhi"] = True
+    if 'k' in text_lower:
+        checkbox_states["Karan"] = True
+    
+    # Extract numbers from the text
+    cleaned_amount = ''.join(c for c in text if c.isdigit() or c == '.' or c == '-')
+    
+    return cleaned_amount, checkbox_states
+
+def handle_input_change(index: int):
+    """Handle input changes and focus management"""
+    # Get the current value from the input
+    current_value = st.session_state[f"cost_{index}"]
+    cleaned_amount, checkbox_states = process_input_text(current_value)
+    
+    # Update the entry in the session state
+    st.session_state.entries[index]["cost"] = cleaned_amount
+    st.session_state.entries[index]["Mustafa"] = checkbox_states["Mustafa"]
+    st.session_state.entries[index]["Adhi"] = checkbox_states["Adhi"]
+    st.session_state.entries[index]["Karan"] = checkbox_states["Karan"]
 
 def is_valid_number(value: str) -> bool:
     """Validate if the input string is a valid positive number."""
@@ -71,30 +120,27 @@ for index, entry in enumerate(st.session_state.entries):
     cols = st.columns([3, 1, 1, 1, 1])
     
     # Cost input
-    previous_value = entry["cost"]
     current_value = cols[0].text_input(
         "Cost",
         value=entry["cost"],
         key=f"cost_{index}",
         placeholder=f"Item {index + 1} amount",
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        on_change=lambda i=index: handle_input_change(i)
     )
     
     # If this is the last row and user started typing, add a new row
-    if (index == len(st.session_state.entries) - 1 and 
-        current_value and 
-        current_value != previous_value):
+    if index == len(st.session_state.entries) - 1 and current_value.strip():
         st.session_state.entries.append({"cost": "", "Mustafa": False, "Adhi": False, "Karan": False})
         form_changed = True
-    
-    entry["cost"] = current_value
+        move_to_next_row(index)
     
     # Checkboxes
     entry["Mustafa"] = cols[1].checkbox("Mustafa", value=entry["Mustafa"], key=f"Mustafa_{index}")
     entry["Adhi"] = cols[2].checkbox("Adhi", value=entry["Adhi"], key=f"Adhi_{index}")
     entry["Karan"] = cols[3].checkbox("Karan", value=entry["Karan"], key=f"Karan_{index}")
     
-    # Delete button - collect indices to delete after the loop
+    # Delete button
     if cols[4].button("🗑️", key=f"delete_{index}"):
         entries_to_delete.append(index)
 
@@ -120,11 +166,20 @@ if any(totals.values()):
             label=f"{person}'s Share",
             value=f"${amount:.2f}"
         )
+    
+    # Add total sum
+    total_sum = sum(totals.values())
+    st.markdown("---")
+    st.markdown(f"""
+        <div style='text-align: center; padding: 1rem; background-color: #f0f2f6; border-radius: 0.5rem;'>
+            <h3 style='margin: 0;'>Total Amount: <span style='color: #ff4b4b;'>${total_sum:.2f}</span></h3>
+        </div>
+    """, unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
 st.markdown("""
     <div style='text-align: center; color: gray; font-size: 0.8em;'>
-    💡 Start typing to add new rows automatically
+    💡 Type amount followed by 'm', 'a', or 'k' to auto-select people (e.g., "100mk" for Mustafa and Karan)
     </div>
 """, unsafe_allow_html=True)
