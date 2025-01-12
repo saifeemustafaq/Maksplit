@@ -176,6 +176,49 @@ if any(totals.values()):
         </div>
     """, unsafe_allow_html=True)
 
+# App Guide Section
+st.markdown("---")
+
+# About section
+st.subheader("📱 About This App")
+st.write("""
+While Splitwise is a popular expense-sharing app, it has limitations that can make it frustrating for quick, multiple-item splits:
+
+- **Splitwise's Limitations:**
+    - Limited to 2 free entries before blocking functionality
+    - Requires multiple steps to split each item
+    - Time-consuming for bulk entries (imagine splitting 50 shopping items!)
+    - Needs login and setup
+
+- **Our Solution:**
+    - ⚡ Instant item addition with no limits
+    - 🎯 Quick-entry with initials (e.g., "100mk" for instant split)
+    - 🧮 Automatic split calculations (no manual calculator needed)
+    - 🚀 No login, no setup - just start splitting!
+
+Perfect for shopping trips where you're buying multiple items and need to split them quickly without the hassle of going through multiple steps for each item.
+""")
+
+# Quick Tips section
+st.write("### ✨ Quick Tips")
+st.write("""
+- **Quick Entry:** Type amount followed by initials (m, a, k) to auto-select people
+- **Examples:**
+    - "100m" → $100 for Mustafa only
+    - "50mk" → $50 split between Mustafa and Karan
+    - "75mak" → $75 split equally among all three
+- **Navigation:** Use Tab or Enter to move between fields
+- **Delete:** Use the 🗑️ button to remove any entry
+""")
+
+# Use Cases section
+st.write("### 💡 Use Cases")
+st.write("""
+- **Shopping Trips:** Quick split for groceries or mall purchases
+- **Restaurant Bills:** Instantly divide shared and individual items
+- **Group Activities:** Split tickets, rentals, or any shared expenses
+""")
+
 # Footer
 st.markdown("---")
 st.markdown("""
