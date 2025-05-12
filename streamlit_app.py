@@ -10,6 +10,16 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Initialize name set in session state
+if "is_redmond" not in st.session_state:
+    st.session_state.is_redmond = False
+
+# Get the appropriate names based on the state
+def get_names():
+    if st.session_state.is_redmond:
+        return ["Mustafa", "Ignas", "Prayag"]
+    return ["Mustafa", "Adhi", "Karan"]
+
 # Custom CSS for better alignment and to hide default menu items
 st.markdown("""
     <style>
@@ -101,11 +111,8 @@ def process_input_text(text: str) -> tuple[str, dict]:
     Returns a tuple of (cleaned_amount, checkbox_states)
     """
     # Initialize checkbox states
-    checkbox_states = {
-        "Mustafa": False,
-        "Adhi": False,
-        "Karan": False
-    }
+    names = get_names()
+    checkbox_states = {name: False for name in names}
     
     # Convert text to lowercase for case-insensitive matching
     text_lower = text.lower()
@@ -113,10 +120,14 @@ def process_input_text(text: str) -> tuple[str, dict]:
     # Check for special characters
     if 'm' in text_lower:
         checkbox_states["Mustafa"] = True
-    if 'a' in text_lower:
+    if 'a' in text_lower and not st.session_state.is_redmond:
         checkbox_states["Adhi"] = True
-    if 'k' in text_lower:
+    if 'k' in text_lower and not st.session_state.is_redmond:
         checkbox_states["Karan"] = True
+    if 'i' in text_lower and st.session_state.is_redmond:
+        checkbox_states["Ignas"] = True
+    if 'p' in text_lower and st.session_state.is_redmond:
+        checkbox_states["Prayag"] = True
     
     # Extract numbers from the text
     cleaned_amount = ''.join(c for c in text if c.isdigit() or c == '.' or c == '-')
@@ -131,9 +142,9 @@ def handle_input_change(index: int):
     
     # Update the entry in the session state
     st.session_state.entries[index]["cost"] = cleaned_amount
-    st.session_state.entries[index]["Mustafa"] = checkbox_states["Mustafa"]
-    st.session_state.entries[index]["Adhi"] = checkbox_states["Adhi"]
-    st.session_state.entries[index]["Karan"] = checkbox_states["Karan"]
+    names = get_names()
+    for name in names:
+        st.session_state.entries[index][name] = checkbox_states[name]
 
 def is_valid_number(value: str) -> bool:
     """Validate if the input string is a valid positive number."""
@@ -147,7 +158,8 @@ def is_valid_number(value: str) -> bool:
 
 def calculate_totals():
     """Calculate split expenses in real-time."""
-    totals = {"Mustafa": Decimal('0'), "Adhi": Decimal('0'), "Karan": Decimal('0')}
+    names = get_names()
+    totals = {name: Decimal('0') for name in names}
     
     for entry in st.session_state.entries:
         if not entry["cost"].strip():
@@ -156,7 +168,7 @@ def calculate_totals():
             cost = Decimal(entry["cost"])
             if cost < 0:
                 continue
-            selected_people = [key for key in ["Mustafa", "Adhi", "Karan"] if entry[key]]
+            selected_people = [key for key in names if entry[key]]
             if selected_people:
                 split_cost = cost / len(selected_people)
                 for person in selected_people:
@@ -165,6 +177,13 @@ def calculate_totals():
             continue
     
     return {k: float(v.quantize(Decimal('0.01'))) for k, v in totals.items()}
+
+# Redmond button
+if st.button("Redmond", key="redmond_button"):
+    st.session_state.is_redmond = not st.session_state.is_redmond
+    # Reset entries when switching name sets
+    st.session_state.entries = [{"cost": "", **{name: False for name in get_names()}}]
+    st.rerun()
 
 # Header
 st.markdown("<h1 style='text-align: center;'>Shopping Expense Splitter 🛍️</h1>", unsafe_allow_html=True)
@@ -189,14 +208,14 @@ for index, entry in enumerate(st.session_state.entries):
     
     # If this is the last row and user started typing, add a new row
     if index == len(st.session_state.entries) - 1 and current_value.strip():
-        st.session_state.entries.append({"cost": "", "Mustafa": False, "Adhi": False, "Karan": False})
+        st.session_state.entries.append({"cost": "", **{name: False for name in get_names()}})
         form_changed = True
         move_to_next_row(index)
     
     # Checkboxes
-    entry["Mustafa"] = cols[1].checkbox("Mustafa", value=entry["Mustafa"], key=f"Mustafa_{index}")
-    entry["Adhi"] = cols[2].checkbox("Adhi", value=entry["Adhi"], key=f"Adhi_{index}")
-    entry["Karan"] = cols[3].checkbox("Karan", value=entry["Karan"], key=f"Karan_{index}")
+    names = get_names()
+    for i, name in enumerate(names):
+        entry[name] = cols[i+1].checkbox(name, value=entry.get(name, False), key=f"{name}_{index}")
     
     # Delete button
     if cols[4].button("🗑️", key=f"delete_{index}"):
@@ -208,7 +227,7 @@ if entries_to_delete:
         st.session_state.entries.pop(index)
     # Ensure at least one row exists
     if not st.session_state.entries:
-        st.session_state.entries.append({"cost": "", "Mustafa": False, "Adhi": False, "Karan": False})
+        st.session_state.entries.append({"cost": "", **{name: False for name in get_names()}})
     st.rerun()
 
 # Calculate and display totals
@@ -259,12 +278,14 @@ Perfect for shopping trips where you're buying multiple items and need to split 
 
 # Quick Tips section
 st.write("### ✨ Quick Tips")
-st.write("""
-- **Quick Entry:** Type amount followed by initials (m, a, k) to auto-select people
+names = get_names()
+initials = ''.join(name[0].lower() for name in names)
+st.write(f"""
+- **Quick Entry:** Type amount followed by initials ({initials}) to auto-select people
 - **Examples:**
     - "100m" → $100 for Mustafa only
-    - "50mk" → $50 split between Mustafa and Karan
-    - "75mak" → $75 split equally among all three
+    - "50mi" → $50 split between Mustafa and Ignas
+    - "75mip" → $75 split equally among all three
 - **Navigation:** Use Tab or Enter to move between fields
 - **Delete:** Use the 🗑️ button to remove any entry
 """)
@@ -279,8 +300,8 @@ st.write("""
 
 # Footer
 st.markdown("---")
-st.markdown("""
+st.markdown(f"""
     <div style='text-align: center; color: gray; font-size: 0.8em;'>
-    💡 Type amount followed by 'm', 'a', or 'k' to auto-select people (e.g., "100mk" for Mustafa and Karan)
+    💡 Type amount followed by '{initials}' to auto-select people (e.g., "100mi" for Mustafa and Ignas)
     </div>
 """, unsafe_allow_html=True)
