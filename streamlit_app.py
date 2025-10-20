@@ -215,7 +215,10 @@ for index, entry in enumerate(st.session_state.entries):
     # Checkboxes
     names = get_names()
     for i, name in enumerate(names):
-        entry[name] = cols[i+1].checkbox(name, value=entry.get(name, False), key=f"{name}_{index}")
+        # Always use the current value from session state
+        checkbox_value = st.session_state.entries[index].get(name, False)
+        # Update the entry reference to keep it in sync
+        entry[name] = cols[i+1].checkbox(name, value=checkbox_value, key=f"{name}_{index}")
     
     # Delete button
     if cols[4].button("🗑️", key=f"delete_{index}"):
