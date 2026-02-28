@@ -154,6 +154,7 @@ def handle_input_change(index: int):
     names = get_names()
     for name in names:
         st.session_state.entries[index][name] = checkbox_states[name]
+        st.session_state[f"{name}_{index}"] = checkbox_states[name]
 
 def handle_checkbox_change(index: int, name: str):
     """Handle checkbox changes"""
@@ -274,13 +275,12 @@ if has_temp_members:
             
             # Checkboxes for all names (base + temporary)
             for i, name in enumerate(names):
-                # Always use the current value from session state
-                checkbox_value = st.session_state.entries[index].get(name, False)
-                # Update the entry reference to keep it in sync
+                cb_key = f"{name}_{index}"
+                if cb_key not in st.session_state:
+                    st.session_state[cb_key] = st.session_state.entries[index].get(name, False)
                 entry[name] = cols[i+1].checkbox(
                     name, 
-                    value=checkbox_value, 
-                    key=f"{name}_{index}",
+                    key=cb_key,
                     on_change=lambda i=index, n=name: handle_checkbox_change(i, n)
                 )
             
@@ -391,13 +391,12 @@ else:
             
             # Checkboxes for all names (base + temporary)
             for i, name in enumerate(names):
-                # Always use the current value from session state
-                checkbox_value = st.session_state.entries[index].get(name, False)
-                # Update the entry reference to keep it in sync
+                cb_key = f"{name}_{index}"
+                if cb_key not in st.session_state:
+                    st.session_state[cb_key] = st.session_state.entries[index].get(name, False)
                 entry[name] = cols[i+1].checkbox(
                     name, 
-                    value=checkbox_value, 
-                    key=f"{name}_{index}",
+                    key=cb_key,
                     on_change=lambda i=index, n=name: handle_checkbox_change(i, n)
                 )
             
