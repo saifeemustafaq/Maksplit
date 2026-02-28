@@ -10,22 +10,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Initialize name set in session state
-if "is_redmond" not in st.session_state:
-    st.session_state.is_redmond = False
-
 # Initialize temporary members in session state
 if "temp_members" not in st.session_state:
     st.session_state.temp_members = []
 
 # Get the appropriate names based on the state
 def get_names():
-    if st.session_state.is_redmond:
-        base_names = ["Mustafa", "Ignas", "Prayag"]
-    else:
-        base_names = ["Mustafa", "Adhi", "Karan"]
-    
-    # Add temporary members
+    base_names = ["MS", "AD", "RS"]
     return base_names + st.session_state.temp_members
 
 # Custom CSS for better alignment and to hide default menu items
@@ -141,15 +132,11 @@ def process_input_text(text: str) -> tuple[str, dict]:
     
     # Check for special characters
     if 'm' in text_lower:
-        checkbox_states["Mustafa"] = True
-    if 'a' in text_lower and not st.session_state.is_redmond:
-        checkbox_states["Adhi"] = True
-    if 'k' in text_lower and not st.session_state.is_redmond:
-        checkbox_states["Karan"] = True
-    if 'i' in text_lower and st.session_state.is_redmond:
-        checkbox_states["Ignas"] = True
-    if 'p' in text_lower and st.session_state.is_redmond:
-        checkbox_states["Prayag"] = True
+        checkbox_states["MS"] = True
+    if 'r' in text_lower:
+        checkbox_states["RS"] = True
+    if 'a' in text_lower:
+        checkbox_states["AD"] = True
     
     # Extract numbers from the text
     cleaned_amount = ''.join(c for c in text if c.isdigit() or c == '.' or c == '-')
@@ -206,13 +193,6 @@ def calculate_totals():
             continue
     
     return {k: float(v.quantize(Decimal('0.01'))) for k, v in totals.items()}
-
-# Redmond button
-if st.button("Redmond", key="redmond_button"):
-    st.session_state.is_redmond = not st.session_state.is_redmond
-    # Reset entries when switching name sets
-    st.session_state.entries = [{"cost": "", **{name: False for name in get_names()}}]
-    st.rerun()
 
 # Add temporary member section
 st.markdown("---")
@@ -321,20 +301,19 @@ if has_temp_members:
     with right_col:
         # Total Split card (top)
         if any(totals.values()):
-            st.markdown("""
+            splits_html = "".join(
+                f"<div style='display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef; font-size: 0.9rem;'>"
+                f"<span style='font-weight: 500;'>{person}:</span>"
+                f"<span style='font-weight: bold; color: #28a745;'>${amount:.2f}</span>"
+                f"</div>"
+                for person, amount in totals.items()
+            )
+            st.markdown(f"""
             <div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
                 <h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
+                {splits_html}
             </div>
             """, unsafe_allow_html=True)
-            
-            # Individual splits
-            for person, amount in totals.items():
-                st.markdown(f"""
-                <div style='display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef; font-size: 0.9rem;'>
-                    <span style='font-weight: 500;'>{person}:</span>
-                    <span style='font-weight: bold; color: #28a745;'>${amount:.2f}</span>
-                </div>
-                """, unsafe_allow_html=True)
         else:
             st.markdown("""
             <div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
@@ -358,20 +337,19 @@ else:
     with left_col:
         # Left card - Total Split
         if any(totals.values()):
-            st.markdown("""
+            splits_html = "".join(
+                f"<div style='display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef; font-size: 0.9rem;'>"
+                f"<span style='font-weight: 500;'>{person}:</span>"
+                f"<span style='font-weight: bold; color: #28a745;'>${amount:.2f}</span>"
+                f"</div>"
+                for person, amount in totals.items()
+            )
+            st.markdown(f"""
             <div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
                 <h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
+                {splits_html}
             </div>
             """, unsafe_allow_html=True)
-            
-            # Individual splits
-            for person, amount in totals.items():
-                st.markdown(f"""
-                <div style='display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef; font-size: 0.9rem;'>
-                    <span style='font-weight: 500;'>{person}:</span>
-                    <span style='font-weight: bold; color: #28a745;'>${amount:.2f}</span>
-                </div>
-                """, unsafe_allow_html=True)
         else:
             st.markdown("""
             <div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
@@ -477,8 +455,8 @@ st.write(f"""
 - **Quick Entry:** Type amount followed by initials ({initials}) to auto-select people
 - **Examples:**
     - "100m" → $100 for Mustafa only
-    - "50mi" → $50 split between Mustafa and Ignas
-    - "75mip" → $75 split equally among all three
+    - "50mr" → $50 split between Mustafa and Rohit
+    - "75mra" → $75 split equally among all three
 - **Navigation:** Use Tab or Enter to move between fields
 - **Delete:** Use the 🗑️ button to remove any entry
 """)
@@ -495,6 +473,6 @@ st.write("""
 st.markdown("---")
 st.markdown(f"""
     <div style='text-align: center; color: gray; font-size: 0.8em;'>
-    💡 Type amount followed by '{initials}' to auto-select people (e.g., "100mi" for Mustafa and Ignas)
+    💡 Type amount followed by '{initials}' to auto-select people (e.g., "100mr" for Mustafa and Rohit)
     </div>
 """, unsafe_allow_html=True)
