@@ -223,9 +223,17 @@ with col3:
                     del entry[temp_member]
         st.rerun()
 
-# Show current temporary members
+# Show current temporary members with individual remove buttons
 if st.session_state.temp_members:
-    st.markdown(f"**Temporary members:** {', '.join(st.session_state.temp_members)}")
+    st.markdown("**Temporary members:**")
+    member_cols = st.columns(len(st.session_state.temp_members))
+    for idx, member in enumerate(st.session_state.temp_members):
+        with member_cols[idx]:
+            if st.button(f"❌ {member}", key=f"remove_temp_{idx}"):
+                st.session_state.temp_members.remove(member)
+                for entry in st.session_state.entries:
+                    entry.pop(member, None)
+                st.rerun()
     st.markdown("---")
 
 # Header
