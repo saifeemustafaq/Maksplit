@@ -411,19 +411,15 @@ if has_temp_members:
                     f"</div>"
                 )
             splits_html = "".join(splits_lines)
-            st.markdown(f"""
-            <div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
-                <h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
-                {splits_html}
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"""<div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
+<h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
+{splits_html}
+</div>""", unsafe_allow_html=True)
         else:
-            st.markdown("""
-            <div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
-                <h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
-                <p style='color: #6c757d; font-size: 0.9rem; margin: 0;'>Add items to see splits</p>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown("""<div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
+<h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
+<p style='color: #6c757d; font-size: 0.9rem; margin: 0;'>Add items to see splits</p>
+</div>""", unsafe_allow_html=True)
         
         # Total Amount card (bottom)
         breakdown_lines = ""
@@ -433,13 +429,11 @@ if has_temp_members:
                 breakdown_lines += f"<div style='font-size: 0.85rem; color: #856404; margin-bottom: 0.3rem;'>Tax: ${tax_applied:.2f}</div>"
             if delivery_applied > 0:
                 breakdown_lines += f"<div style='font-size: 0.85rem; color: #856404; margin-bottom: 0.3rem;'>Delivery: ${delivery_applied:.2f}</div>"
-        st.markdown(f"""
-        <div style='background-color: #fff3cd; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #ffc107; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; margin-bottom: 1rem;'>
-            <h3 style='margin: 0 0 1rem 0; color: #856404; font-size: 1.1rem;'>💵 Total Amount</h3>
-            {breakdown_lines}
-            <div style='font-size: 1.8rem; font-weight: bold; color: #ff4b4b;'>${total_sum:.2f}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div style='background-color: #fff3cd; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #ffc107; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; margin-bottom: 1rem;'>
+<h3 style='margin: 0 0 1rem 0; color: #856404; font-size: 1.1rem;'>💵 Total Amount</h3>
+{breakdown_lines}
+<div style='font-size: 1.8rem; font-weight: bold; color: #ff4b4b;'>${total_sum:.2f}</div>
+</div>""", unsafe_allow_html=True)
 
 else:
     # When no temporary members, use three-column layout: Left (Total Split), Middle (Form), Right (Total Amount)
@@ -470,19 +464,15 @@ else:
                     f"</div>"
                 )
             splits_html = "".join(splits_lines)
-            st.markdown(f"""
-            <div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
-                <h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
-                {splits_html}
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"""<div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
+<h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
+{splits_html}
+</div>""", unsafe_allow_html=True)
         else:
-            st.markdown("""
-            <div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
-                <h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
-                <p style='color: #6c757d; font-size: 0.9rem; margin: 0;'>Add items to see splits</p>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown("""<div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
+<h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
+<p style='color: #6c757d; font-size: 0.9rem; margin: 0;'>Add items to see splits</p>
+</div>""", unsafe_allow_html=True)
 
     with middle_col:
         # Main expense splitter form
@@ -586,13 +576,11 @@ else:
                 breakdown_lines += f"<div style='font-size: 0.85rem; color: #856404; margin-bottom: 0.3rem;'>Tax: ${tax_applied:.2f}</div>"
             if delivery_applied > 0:
                 breakdown_lines += f"<div style='font-size: 0.85rem; color: #856404; margin-bottom: 0.3rem;'>Delivery: ${delivery_applied:.2f}</div>"
-        st.markdown(f"""
-        <div style='background-color: #fff3cd; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #ffc107; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; margin-bottom: 1rem;'>
-            <h3 style='margin: 0 0 1rem 0; color: #856404; font-size: 1.1rem;'>💵 Total Amount</h3>
-            {breakdown_lines}
-            <div style='font-size: 1.8rem; font-weight: bold; color: #ff4b4b;'>${total_sum:.2f}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div style='background-color: #fff3cd; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #ffc107; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; margin-bottom: 1rem;'>
+<h3 style='margin: 0 0 1rem 0; color: #856404; font-size: 1.1rem;'>💵 Total Amount</h3>
+{breakdown_lines}
+<div style='font-size: 1.8rem; font-weight: bold; color: #ff4b4b;'>${total_sum:.2f}</div>
+</div>""", unsafe_allow_html=True)
 
 # App Guide Section
 st.markdown("---")
