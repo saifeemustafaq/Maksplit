@@ -110,6 +110,14 @@ if "last_entry_count" not in st.session_state:
     st.session_state.last_entry_count = 1
 if "active_index" not in st.session_state:
     st.session_state.active_index = 0
+if "show_tax" not in st.session_state:
+    st.session_state.show_tax = False
+if "show_delivery" not in st.session_state:
+    st.session_state.show_delivery = False
+if "tax_amount" not in st.session_state:
+    st.session_state.tax_amount = ""
+if "delivery_amount" not in st.session_state:
+    st.session_state.delivery_amount = ""
 
 def move_to_next_row(current_index):
     """Move focus to the next row's text input"""
@@ -163,6 +171,12 @@ def handle_checkbox_change(index: int, name: str):
     if checkbox_key in st.session_state:
         st.session_state.entries[index][name] = st.session_state[checkbox_key]
 
+def handle_tax_input_change(widget_key: str):
+    st.session_state.tax_amount = st.session_state[widget_key]
+
+def handle_delivery_input_change(widget_key: str):
+    st.session_state.delivery_amount = st.session_state[widget_key]
+
 def is_valid_number(value: str) -> bool:
     """Validate if the input string is a valid positive number."""
     if not value.strip():
@@ -174,9 +188,9 @@ def is_valid_number(value: str) -> bool:
         return False
 
 def calculate_totals():
-    """Calculate split expenses in real-time."""
+    """Calculate split expenses with pro-rata tax and delivery."""
     names = get_names()
-    totals = {name: Decimal('0') for name in names}
+    subtotals = {name: Decimal('0') for name in names}
     
     for entry in st.session_state.entries:
         if not entry["cost"].strip():
@@ -189,11 +203,39 @@ def calculate_totals():
             if selected_people:
                 split_cost = cost / len(selected_people)
                 for person in selected_people:
-                    totals[person] += split_cost
+                    subtotals[person] += split_cost
         except InvalidOperation:
             continue
     
-    return {k: float(v.quantize(Decimal('0.01'))) for k, v in totals.items()}
+    grand_subtotal = sum(subtotals.values())
+    
+    tax_val = Decimal('0')
+    delivery_val = Decimal('0')
+    if st.session_state.show_tax and st.session_state.tax_amount.strip():
+        try:
+            tv = Decimal(st.session_state.tax_amount)
+            if tv >= 0:
+                tax_val = tv
+        except InvalidOperation:
+            pass
+    if st.session_state.show_delivery and st.session_state.delivery_amount.strip():
+        try:
+            dv = Decimal(st.session_state.delivery_amount)
+            if dv >= 0:
+                delivery_val = dv
+        except InvalidOperation:
+            pass
+
+    extras = tax_val + delivery_val
+    totals = dict(subtotals)
+    if extras > 0 and grand_subtotal > 0:
+        for name in names:
+            proportion = subtotals[name] / grand_subtotal
+            totals[name] = subtotals[name] + extras * proportion
+
+    result_totals = {k: float(v.quantize(Decimal('0.01'))) for k, v in totals.items()}
+    result_subtotals = {k: float(v.quantize(Decimal('0.01'))) for k, v in subtotals.items()}
+    return result_totals, result_subtotals, float(tax_val.quantize(Decimal('0.01'))), float(delivery_val.quantize(Decimal('0.01')))
 
 # Add temporary member section
 st.markdown("---")
@@ -240,7 +282,8 @@ if st.session_state.temp_members:
 st.markdown("<h1 style='text-align: center;'>Shopping Expense Splitter 🛍️</h1>", unsafe_allow_html=True)
 
 # Calculate totals
-totals = calculate_totals()
+totals, subtotals, tax_applied, delivery_applied = calculate_totals()
+subtotal_sum = sum(subtotals.values())
 total_sum = sum(totals.values())
 
 # Check if we have temporary members to determine layout
@@ -301,21 +344,73 @@ if has_temp_members:
         if entries_to_delete:
             for index in sorted(entries_to_delete, reverse=True):
                 st.session_state.entries.pop(index)
-            # Ensure at least one row exists
             if not st.session_state.entries:
                 st.session_state.entries.append({"cost": "", **{name: False for name in get_names()}})
             st.rerun()
-    
+
+        # Tax & Delivery toggle buttons
+        tax_col, delivery_col, _ = st.columns([1, 1, 2])
+        with tax_col:
+            if st.button("Remove Tax" if st.session_state.show_tax else "Add Tax", key="toggle_tax_temp"):
+                st.session_state.show_tax = not st.session_state.show_tax
+                if not st.session_state.show_tax:
+                    st.session_state.tax_amount = ""
+                st.rerun()
+        with delivery_col:
+            if st.button("Remove Delivery" if st.session_state.show_delivery else "Add Delivery", key="toggle_delivery_temp"):
+                st.session_state.show_delivery = not st.session_state.show_delivery
+                if not st.session_state.show_delivery:
+                    st.session_state.delivery_amount = ""
+                st.rerun()
+
+        if st.session_state.show_tax or st.session_state.show_delivery:
+            extra_cols = st.columns(2)
+            if st.session_state.show_tax:
+                with extra_cols[0]:
+                    st.text_input(
+                        "Tax Amount",
+                        value=st.session_state.tax_amount,
+                        placeholder="Enter tax amount",
+                        key="tax_input_temp",
+                        on_change=handle_tax_input_change,
+                        args=("tax_input_temp",),
+                    )
+            if st.session_state.show_delivery:
+                with extra_cols[1]:
+                    st.text_input(
+                        "Delivery Amount",
+                        value=st.session_state.delivery_amount,
+                        placeholder="Enter delivery amount",
+                        key="delivery_input_temp",
+                        on_change=handle_delivery_input_change,
+                        args=("delivery_input_temp",),
+                    )
+
     with right_col:
         # Total Split card (top)
+        has_extras = tax_applied > 0 or delivery_applied > 0
         if any(totals.values()):
-            splits_html = "".join(
-                f"<div style='display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef; font-size: 0.9rem;'>"
-                f"<span style='font-weight: 500;'>{person}:</span>"
-                f"<span style='font-weight: bold; color: #28a745;'>${amount:.2f}</span>"
-                f"</div>"
-                for person, amount in totals.items()
-            )
+            splits_lines = []
+            for person in totals:
+                sub = subtotals[person]
+                extra = totals[person] - sub
+                if has_extras and extra > 0:
+                    amount_html = (
+                        f"<span style='color: #6c757d;'>${sub:.2f}</span>"
+                        f" <span style='color: #6c757d;'>+</span> "
+                        f"<span style='color: #856404;'>${extra:.2f}</span>"
+                        f" <span style='color: #6c757d;'>=</span> "
+                        f"<span style='font-weight: bold; color: #28a745;'>${totals[person]:.2f}</span>"
+                    )
+                else:
+                    amount_html = f"<span style='font-weight: bold; color: #28a745;'>${totals[person]:.2f}</span>"
+                splits_lines.append(
+                    f"<div style='display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef; font-size: 0.9rem;'>"
+                    f"<span style='font-weight: 500;'>{person}:</span>"
+                    f"<span>{amount_html}</span>"
+                    f"</div>"
+                )
+            splits_html = "".join(splits_lines)
             st.markdown(f"""
             <div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
                 <h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
@@ -331,9 +426,17 @@ if has_temp_members:
             """, unsafe_allow_html=True)
         
         # Total Amount card (bottom)
+        breakdown_lines = ""
+        if tax_applied > 0 or delivery_applied > 0:
+            breakdown_lines += f"<div style='font-size: 0.85rem; color: #856404; margin-bottom: 0.3rem;'>Subtotal: ${subtotal_sum:.2f}</div>"
+            if tax_applied > 0:
+                breakdown_lines += f"<div style='font-size: 0.85rem; color: #856404; margin-bottom: 0.3rem;'>Tax: ${tax_applied:.2f}</div>"
+            if delivery_applied > 0:
+                breakdown_lines += f"<div style='font-size: 0.85rem; color: #856404; margin-bottom: 0.3rem;'>Delivery: ${delivery_applied:.2f}</div>"
         st.markdown(f"""
         <div style='background-color: #fff3cd; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #ffc107; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; margin-bottom: 1rem;'>
             <h3 style='margin: 0 0 1rem 0; color: #856404; font-size: 1.1rem;'>💵 Total Amount</h3>
+            {breakdown_lines}
             <div style='font-size: 1.8rem; font-weight: bold; color: #ff4b4b;'>${total_sum:.2f}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -344,14 +447,29 @@ else:
 
     with left_col:
         # Left card - Total Split
+        has_extras = tax_applied > 0 or delivery_applied > 0
         if any(totals.values()):
-            splits_html = "".join(
-                f"<div style='display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef; font-size: 0.9rem;'>"
-                f"<span style='font-weight: 500;'>{person}:</span>"
-                f"<span style='font-weight: bold; color: #28a745;'>${amount:.2f}</span>"
-                f"</div>"
-                for person, amount in totals.items()
-            )
+            splits_lines = []
+            for person in totals:
+                sub = subtotals[person]
+                extra = totals[person] - sub
+                if has_extras and extra > 0:
+                    amount_html = (
+                        f"<span style='color: #6c757d;'>${sub:.2f}</span>"
+                        f" <span style='color: #6c757d;'>+</span> "
+                        f"<span style='color: #856404;'>${extra:.2f}</span>"
+                        f" <span style='color: #6c757d;'>=</span> "
+                        f"<span style='font-weight: bold; color: #28a745;'>${totals[person]:.2f}</span>"
+                    )
+                else:
+                    amount_html = f"<span style='font-weight: bold; color: #28a745;'>${totals[person]:.2f}</span>"
+                splits_lines.append(
+                    f"<div style='display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef; font-size: 0.9rem;'>"
+                    f"<span style='font-weight: 500;'>{person}:</span>"
+                    f"<span>{amount_html}</span>"
+                    f"</div>"
+                )
+            splits_html = "".join(splits_lines)
             st.markdown(f"""
             <div style='background-color: #f8f9fa; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;'>
                 <h3 style='margin: 0 0 1rem 0; color: #007bff; font-size: 1.1rem;'>💰 Total Split</h3>
@@ -417,16 +535,61 @@ else:
         if entries_to_delete:
             for index in sorted(entries_to_delete, reverse=True):
                 st.session_state.entries.pop(index)
-            # Ensure at least one row exists
             if not st.session_state.entries:
                 st.session_state.entries.append({"cost": "", **{name: False for name in get_names()}})
             st.rerun()
 
+        # Tax & Delivery toggle buttons
+        tax_col, delivery_col, _ = st.columns([1, 1, 2])
+        with tax_col:
+            if st.button("Remove Tax" if st.session_state.show_tax else "Add Tax", key="toggle_tax_main"):
+                st.session_state.show_tax = not st.session_state.show_tax
+                if not st.session_state.show_tax:
+                    st.session_state.tax_amount = ""
+                st.rerun()
+        with delivery_col:
+            if st.button("Remove Delivery" if st.session_state.show_delivery else "Add Delivery", key="toggle_delivery_main"):
+                st.session_state.show_delivery = not st.session_state.show_delivery
+                if not st.session_state.show_delivery:
+                    st.session_state.delivery_amount = ""
+                st.rerun()
+
+        if st.session_state.show_tax or st.session_state.show_delivery:
+            extra_cols = st.columns(2)
+            if st.session_state.show_tax:
+                with extra_cols[0]:
+                    st.text_input(
+                        "Tax Amount",
+                        value=st.session_state.tax_amount,
+                        placeholder="Enter tax amount",
+                        key="tax_input_main",
+                        on_change=handle_tax_input_change,
+                        args=("tax_input_main",),
+                    )
+            if st.session_state.show_delivery:
+                with extra_cols[1]:
+                    st.text_input(
+                        "Delivery Amount",
+                        value=st.session_state.delivery_amount,
+                        placeholder="Enter delivery amount",
+                        key="delivery_input_main",
+                        on_change=handle_delivery_input_change,
+                        args=("delivery_input_main",),
+                    )
+
     with right_col:
         # Right card - Total Amount
+        breakdown_lines = ""
+        if tax_applied > 0 or delivery_applied > 0:
+            breakdown_lines += f"<div style='font-size: 0.85rem; color: #856404; margin-bottom: 0.3rem;'>Subtotal: ${subtotal_sum:.2f}</div>"
+            if tax_applied > 0:
+                breakdown_lines += f"<div style='font-size: 0.85rem; color: #856404; margin-bottom: 0.3rem;'>Tax: ${tax_applied:.2f}</div>"
+            if delivery_applied > 0:
+                breakdown_lines += f"<div style='font-size: 0.85rem; color: #856404; margin-bottom: 0.3rem;'>Delivery: ${delivery_applied:.2f}</div>"
         st.markdown(f"""
         <div style='background-color: #fff3cd; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid #ffc107; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; margin-bottom: 1rem;'>
             <h3 style='margin: 0 0 1rem 0; color: #856404; font-size: 1.1rem;'>💵 Total Amount</h3>
+            {breakdown_lines}
             <div style='font-size: 1.8rem; font-weight: bold; color: #ff4b4b;'>${total_sum:.2f}</div>
         </div>
         """, unsafe_allow_html=True)
